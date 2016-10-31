@@ -1,1 +1,1 @@
-web: sampleapp
+web: sample-app
