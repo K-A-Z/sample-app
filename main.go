@@ -44,14 +44,15 @@ func getTodoList(c *gin.Context) {
 			c.String(http.StatusInternalServerError, "Error :cant read task ::%q", err)
 			return
 		}
-		c.String(http.StatusOK, "Id: %s  Task: %s \n", id, title)
+		c.String(http.StatusOK, "Id: %d  Task: %s \n", id, title)
 	}
 }
 
 func getTodo(c *gin.Context) {
 	id := c.Param("id")
 	var title, description string
-	db.QueryRow("SELECT title description FROM todo WHERE id=$1", id).Scan(&title, &description)
+	db.QueryRow("SELECT title, description FROM todo WHERE id=$1", id).Scan(&title, &description)
+	fmt.Printf("Id: %s   Title:%s   Description: %s\n", id, title, description)
 	c.String(http.StatusOK, "Task: %s \nDescription: %s", title, description)
 }
 
