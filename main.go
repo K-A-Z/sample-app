@@ -20,8 +20,8 @@ func dbInit() {
 	}
 }
 
-func addTodo(title string, description string) (id int) {
-	err := db.QueryRow("INSERT INTO todo (title, description) VALUES ($1,$2) returning id", title, description).Scan(&id)
+func addTodo(title string, description string) (id int, err error) {
+	err = db.QueryRow("INSERT INTO todo (title, description) VALUES ($1,$2) returning id", title, description).Scan(&id)
 	if err != nil {
 		fmt.Printf("Error incrementing tick: %q", err)
 		return
@@ -30,7 +30,7 @@ func addTodo(title string, description string) (id int) {
 }
 
 func getTodoList(c *gin.Context) {
-	rows, err := db.Query("SELECT title FROM todo")
+	rows, err := db.Query("SELECT id, title FROM todo")
 	if err != nil {
 		c.String(http.StatusInternalServerError,
 			fmt.Sprintf("Error reading ticks: %q", err))
@@ -38,12 +38,13 @@ func getTodoList(c *gin.Context) {
 	}
 	defer rows.Close()
 	for rows.Next() {
+		var id int
 		var title string
-		if err := rows.Scan(&title); err != nil {
+		if err := rows.Scan(&id, &title); err != nil {
 			c.String(http.StatusInternalServerError, "Error :cant read task ::%q", err)
 			return
 		}
-		c.String(http.StatusOK, "Task: %s \n", title)
+		c.String(http.StatusOK, "Id: %s  Task: %s \n", id, title)
 	}
 }
 
@@ -58,7 +59,36 @@ func createTodo(c *gin.Context) {
 	title := c.Query("title")
 	description := c.DefaultQuery("description", "")
 
-	addTodo(title, description)
+	id, err := addTodo(title, description)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Error: Todo is NOT created")
+	}
+	c.String(http.StatusOK, "Todo is inserted as #%s", id)
+
+}
+
+func deleteTodo(c *gin.Context) {
+	id := c.Param("id")
+	_, err := db.Exec("DELETE FROM todo WHERE id=$1", id)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Error: Todo is NOT deleted")
+	}
+}
+
+func updateTodo(c *gin.Context) {
+	id := c.Param("id")
+	title := c.Query("title")
+	description := c.Query("description")
+	var currentTitle, currentDescription string
+	db.QueryRow("SELECT title description FROM todo WHERE id=$1", id).Scan(&currentTitle, &currentDescription)
+	if title == "" {
+		title = currentTitle
+	}
+	if description == "" {
+		description = currentDescription
+	}
+	db.Exec("UPDATE todo SET title = $1, description = $2 WHERE id = $3 ", title, description, id)
+
 }
 
 func main() {
@@ -75,8 +105,10 @@ func main() {
 	})
 
 	router.GET("/todo", getTodoList)
-	router.GET("/todo/:id", getTodo)
 	router.POST("/todo", createTodo)
+	router.GET("/todo/:id", getTodo)
+	router.DELETE("/todo/:id", deleteTodo)
+	router.PUT("/todo/:id", updateTodo)
 
 	router.Run(":" + os.Getenv("PORT"))
 }
