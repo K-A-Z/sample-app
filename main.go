@@ -6,10 +6,17 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 )
+
+type Todo struct {
+	Id          int
+	Title       string
+	Description string
+}
 
 var db *sql.DB
 
@@ -37,6 +44,8 @@ func getTodoList(c *gin.Context) {
 		return
 	}
 	defer rows.Close()
+
+	var todolist []Todo
 	for rows.Next() {
 		var id int
 		var title string
@@ -44,28 +53,45 @@ func getTodoList(c *gin.Context) {
 			c.String(http.StatusInternalServerError, "Error :cant read task ::%q", err)
 			return
 		}
-		c.String(http.StatusOK, "Id: %d  Task: %s \n", id, title)
+		todolist = append(todolist, Todo{Id: id, Title: title})
 	}
+	fmt.Println(todolist)
+	c.HTML(http.StatusOK, "list.tmpl", gin.H{
+		"todo": todolist,
+	})
 }
 
 func getTodo(c *gin.Context) {
-	id := c.Param("id")
+	inputId := c.Param("id")
+	id, err := strconv.Atoi(inputId)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Invalid todo number")
+	}
+
 	var title, description string
 	db.QueryRow("SELECT title, description FROM todo WHERE id=$1", id).Scan(&title, &description)
-	fmt.Printf("Id: %s   Title:%s   Description: %s\n", id, title, description)
-	c.String(http.StatusOK, "Task: %s \nDescription: %s", title, description)
+	fmt.Printf("Id: %d   Title:%s   Description: %s\n", id, title, description)
+	c.HTML(http.StatusOK, "detail.tmpl", gin.H{
+		"todo": Todo{Id: id, Title: title, Description: description},
+	})
 }
 
 func createTodo(c *gin.Context) {
-	title := c.Query("title")
-	description := c.DefaultQuery("description", "")
+	title := c.PostForm("title")
+	description := c.PostForm("description")
 
 	id, err := addTodo(title, description)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Error: Todo is NOT created")
 	}
-	c.String(http.StatusOK, "Todo is inserted as #%s", id)
+	fmt.Printf("Insert todo:# %d ", id)
+	c.Redirect(http.StatusMovedPermanently, "/todo")
 
+}
+func registerTodo(c *gin.Context) {
+	c.HTML(http.StatusOK, "newtodo.tmpl", gin.H{
+		"title": "TODO:New",
+	})
 }
 
 func deleteTodo(c *gin.Context) {
@@ -101,15 +127,21 @@ func main() {
 	dbInit()
 
 	router := gin.Default()
-	router.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Hello World")
-	})
+	router.LoadHTMLGlob("templates/*.tmpl")
+	router.Static("/assets", "./assets")
 
+	router.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.tmpl", gin.H{
+			"message": "Hello World",
+			"title":   "TopPage",
+		})
+	})
 	router.GET("/todo", getTodoList)
+	router.GET("/todo/new", registerTodo)
 	router.POST("/todo", createTodo)
-	router.GET("/todo/:id", getTodo)
-	router.DELETE("/todo/:id", deleteTodo)
-	router.PUT("/todo/:id", updateTodo)
+	router.GET("/todo/detail/:id", getTodo)
+	router.DELETE("/todo/detail/:id", deleteTodo)
+	router.PUT("/todo/detail/:id", updateTodo)
 
 	router.Run(":" + os.Getenv("PORT"))
 }

@@ -1,0 +1,53 @@
+<html>
+  <head>
+    <title>{{.title}}</title>
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://code.getmdl.io/1.2.1/material.indigo-pink.min.css">
+    <script defer src="https://code.getmdl.io/1.2.1/material.min.js"></script>
+
+
+    <style>
+      .todo-list{
+        width: 330px;
+        margin: 0 auto;
+      }
+      .todo-list-table{
+        width: 100%;
+      }
+      .create-button{
+        margin:-20px 10 auto auto;
+      }
+    </style>
+
+  </head>
+  <body>
+    <div class=" mdl-layout mdl-js-layout mdl-color--grey-100">
+      <div class="mdl-layout mdl-js-layout todo-list">
+        <table class="todo-list-table mdl-data-table mdl-js-data-table  mdl-shadow--2dp">
+          <thead>
+            <tr>
+              <th>Id</th>
+              <th class="mdl-data-table__cell--non-numeric">Title</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{range .todo}}
+            <tr>
+              <td>{{.Id}}</td>
+              <td class="mdl-data-table__cell--non-numeric">
+                <a href="/todo/detail/{{.Id}}">{{.Title}}</a>
+              </td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+        <button class="create-button mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--mini-fab mdl-button--colored" onclick="location.href='/todo/new'">
+          <i class="material-icons">add</i>
+        </button>
+      </div>
+    </div>
+
+
+  </body>
+</html>
