@@ -4,6 +4,25 @@
 	"GodepVersion": "v74",
 	"Deps": [
 		{
+			"ImportPath": "github.com/boj/redistore",
+			"Comment": "v1.2",
+			"Rev": "fc113767cd6b051980f260d6dbe84b2740c46ab0"
+		},
+		{
+			"ImportPath": "github.com/garyburd/redigo/internal",
+			"Comment": "v1.0.0-6-g80f7de3",
+			"Rev": "80f7de34463b0ed3d7c61303e5619efe1b227f92"
+		},
+		{
+			"ImportPath": "github.com/garyburd/redigo/redis",
+			"Comment": "v1.0.0-6-g80f7de3",
+			"Rev": "80f7de34463b0ed3d7c61303e5619efe1b227f92"
+		},
+		{
+			"ImportPath": "github.com/gin-gonic/contrib/sessions",
+			"Rev": "cf28f84316e50a05a59d174b37c26ad9a43a1201"
+		},
+		{
 			"ImportPath": "github.com/gin-gonic/gin",
 			"Comment": "v1.0-2-g3900df0",
 			"Rev": "3900df04d2a88e22beaf6a2970c63648b9e1b0e1"
@@ -21,6 +40,20 @@
 		{
 			"ImportPath": "github.com/golang/protobuf/proto",
 			"Rev": "98fa357170587e470c5f27d3c3ea0947b71eb455"
+		},
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
+		},
+		{
+			"ImportPath": "github.com/gorilla/securecookie",
+			"Comment": "v1.1-5-gfa5329f",
+			"Rev": "fa5329f913702981df43dcb2a380bac429c810b5"
+		},
+		{
+			"ImportPath": "github.com/gorilla/sessions",
+			"Comment": "v1.1",
+			"Rev": "ca9ada44574153444b00d3fd9c8559e4cc95f896"
 		},
 		{
 			"ImportPath": "github.com/lib/pq",

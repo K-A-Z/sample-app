@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 
+	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 )
@@ -36,7 +38,76 @@ func addTodo(title string, description string) (id int, err error) {
 	return
 }
 
+func loginForm(c *gin.Context) {
+	c.HTML(http.StatusOK, "login.tmpl", nil)
+}
+
+type User struct {
+	Name  string
+	Email string
+}
+
+type SessionInfo struct {
+	Name           interface{}
+	Email          interface{}
+	IsSessionAlive bool
+}
+
+func login(c *gin.Context) {
+	username := c.PostForm("username")
+	password := c.PostForm("password")
+	if username == "" || password == "" {
+		//ユーザ・パスが空ならログインに戻す
+		c.HTML(http.StatusOK, "login.tmpl", gin.H{})
+	}
+	//ログインチェック
+	isExits, User := isLoginUserExist(username, password)
+	if !isExits {
+		c.HTML(http.StatusOK, "login.tmpl", gin.H{})
+	}
+	//セッション作成
+	session := sessions.Default(c)
+
+	session.Set("name", User.Name)
+	session.Set("email", User.Email)
+	session.Save()
+
+	getTodoList(c)
+
+}
+
+func logout(c *gin.Context) {
+	session := sessions.Default(c)
+	session.Clear()
+	session.Save()
+	loginForm(c)
+}
+
+func isLoginUserExist(username, password string) (bool, User) {
+	if username == "hoge" && password == "huga" {
+		return true, User{Name: "testuser", Email: "hogehoge@example.com"}
+	} else {
+		return false, User{}
+	}
+}
+
+//ログインチェック用
+func isLogin(c *gin.Context) {
+	var sessionInfo SessionInfo
+	//セッション作成
+	session := sessions.Default(c)
+	sessionInfo.Name = session.Get("name")
+	sessionInfo.Email = session.Get("email")
+	if sessionInfo.Name == nil {
+		//未ログインの場合はログイン画面に飛ばす
+		loginForm(c)
+	}
+	c.Set("sessionInfo", sessionInfo)
+}
+
 func getTodoList(c *gin.Context) {
+	isLogin(c)
+
 	rows, err := db.Query("SELECT id, title FROM todo")
 	if err != nil {
 		c.String(http.StatusInternalServerError,
@@ -62,6 +133,7 @@ func getTodoList(c *gin.Context) {
 }
 
 func getTodo(c *gin.Context) {
+	isLogin(c)
 	inputId := c.Param("id")
 	id, err := strconv.Atoi(inputId)
 	if err != nil {
@@ -77,6 +149,7 @@ func getTodo(c *gin.Context) {
 }
 
 func createTodo(c *gin.Context) {
+	isLogin(c)
 	title := c.PostForm("title")
 	description := c.PostForm("description")
 
@@ -85,10 +158,12 @@ func createTodo(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "Error: Todo is NOT created")
 	}
 	fmt.Printf("Insert todo:# %d ", id)
-	c.Redirect(http.StatusMovedPermanently, "/todo")
+
+	getTodoList(c)
 
 }
 func registerTodo(c *gin.Context) {
+	isLogin(c)
 	c.HTML(http.StatusOK, "newtodo.tmpl", gin.H{
 		"title": "TODO:New",
 	})
@@ -124,24 +199,41 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error opening database: %q", err)
 	}
+	//session処理用のRedisセットアップ
+	redisUrl := os.Getenv("REDIS_URL")
+	var redisHost, redisPassword string
+	if redisUrl != "" {
+		parsedUrl, _ := url.Parse(redisUrl)
+		redisPassword, _ = parsedUrl.User.Password()
+		redisHost = parsedUrl.Host
+	}
+	store, _ := sessions.NewRedisStore(10, "tcp", redisHost, redisPassword, []byte("secret"))
+	if err != nil {
+		log.Fatalf("Error redis is not connected: %q", err)
+	}
+
+	//初期DBセットアップ
 	dbInit()
 
+	//ルーティング初期設定
 	router := gin.Default()
+	router.Use(sessions.Sessions("session", store))
 	router.LoadHTMLGlob("templates/*.tmpl")
 	router.Static("/assets", "./assets")
 
+	//ルーティング
 	router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"message": "Hello World",
-			"title":   "TopPage",
-		})
+		c.Redirect(http.StatusSeeOther, "/login")
 	})
+	router.GET("/login", loginForm)
+	router.POST("/login", login)
 	router.GET("/todo", getTodoList)
 	router.GET("/todo/new", registerTodo)
 	router.POST("/todo", createTodo)
 	router.GET("/todo/detail/:id", getTodo)
 	router.DELETE("/todo/detail/:id", deleteTodo)
 	router.PUT("/todo/detail/:id", updateTodo)
+	router.GET("/logout", logout)
 
 	router.Run(":" + os.Getenv("PORT"))
 }
