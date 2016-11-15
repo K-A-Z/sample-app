@@ -29,6 +29,7 @@
             <tr>
               <th>Id</th>
               <th class="mdl-data-table__cell--non-numeric">Title</th>
+              <th>User Name</th>
             </tr>
           </thead>
           <tbody>
@@ -38,6 +39,7 @@
               <td class="mdl-data-table__cell--non-numeric">
                 <a href="/todo/detail/{{.Id}}">{{.Title}}</a>
               </td>
+            <td>{{.UserName}}</td>
             </tr>
             {{end}}
           </tbody>
