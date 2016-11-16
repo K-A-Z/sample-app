@@ -8,7 +8,6 @@ import (
 )
 
 func getUserList(c *gin.Context) {
-	isLogin(c)
 
 	rows, err := db.Query("SELECT id,name, email FROM users")
 	if err != nil {
@@ -34,12 +33,10 @@ func getUserList(c *gin.Context) {
 }
 
 func registerUser(c *gin.Context) {
-	isLogin(c)
 	c.HTML(http.StatusOK, "newUser.tmpl", gin.H{})
 }
 
 func createUser(c *gin.Context) {
-	isLogin(c)
 	name := c.PostForm("name")
 	email := c.PostForm("email")
 	password := c.PostForm("password")
@@ -77,7 +74,6 @@ func insertUser(user User, password string) (User, error) {
 }
 
 func getUser(c *gin.Context) {
-	isLogin(c)
 	id := c.Param("id")
 
 	var name, email string

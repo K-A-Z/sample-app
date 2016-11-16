@@ -9,8 +9,6 @@ import (
 )
 
 func getTodoList(c *gin.Context) {
-	isLogin(c)
-
 	rows, err := db.Query("SELECT todo.id, title ,users.name FROM todo ,users WHERE todo.userId=users.id")
 	if err != nil {
 		c.String(http.StatusInternalServerError,
@@ -35,7 +33,6 @@ func getTodoList(c *gin.Context) {
 }
 
 func getTodo(c *gin.Context) {
-	isLogin(c)
 	id := c.Param("id")
 
 	var title, description string
@@ -47,7 +44,6 @@ func getTodo(c *gin.Context) {
 }
 
 func createTodo(c *gin.Context) {
-	isLogin(c)
 	title := c.PostForm("title")
 	description := c.PostForm("description")
 	session := sessions.Default(c)
@@ -63,7 +59,6 @@ func createTodo(c *gin.Context) {
 
 }
 func registerTodo(c *gin.Context) {
-	isLogin(c)
 	c.HTML(http.StatusOK, "newtodo.tmpl", gin.H{
 		"title": "TODO:New",
 	})

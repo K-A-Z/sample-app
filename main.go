@@ -80,20 +80,25 @@ func main() {
 	})
 	router.GET("/login", loginForm)
 	router.POST("/login", login)
-	router.GET("/todo", getTodoList)
-	router.GET("/todo/new", registerTodo)
-	router.POST("/todo", createTodo)
-	router.GET("/todo/detail/:id", getTodo)
-	router.DELETE("/todo/detail/:id", deleteTodo)
-	router.PUT("/todo/detail/:id", updateTodo)
-	router.GET("/logout", logout)
 
-	router.GET("/user", getUserList)
-	router.GET("/user/new", registerUser)
-	router.POST("/user", createUser)
-	router.GET("/user/detail/:id", getUser)
-	router.DELETE("/user/detail/:id", deleteUser)
-	router.PUT("/user/detail/:id", updateUser)
+	authorized := router.Group("/")
+	authorized.Use(AuthRequired())
+	{
+		authorized.GET("/todo", getTodoList)
+		authorized.GET("/todo/new", registerTodo)
+		authorized.POST("/todo", createTodo)
+		authorized.GET("/todo/detail/:id", getTodo)
+		authorized.DELETE("/todo/detail/:id", deleteTodo)
+		authorized.PUT("/todo/detail/:id", updateTodo)
+		authorized.GET("/logout", logout)
+
+		authorized.GET("/user", getUserList)
+		authorized.GET("/user/new", registerUser)
+		authorized.POST("/user", createUser)
+		authorized.GET("/user/detail/:id", getUser)
+		authorized.DELETE("/user/detail/:id", deleteUser)
+		authorized.PUT("/user/detail/:id", updateUser)
+	}
 
 	router.Run(":" + os.Getenv("PORT"))
 }

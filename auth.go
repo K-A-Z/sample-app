@@ -19,21 +19,23 @@ func toHash(password string) (string, error) {
 	return hex.EncodeToString(hash), nil
 }
 
-func isTruePassword(password, passwordHash string) bool {
-	decodedPasswordHash, _ := hex.DecodeString(passwordHash)
-	err := bcrypt.CompareHashAndPassword(decodedPasswordHash, []byte(password))
-	if err == nil {
-		//認証に成功した場合にはerrが帰らないので認証成功としてtrueを返す
-		return true
-	}
-	return false
-}
-
 func loginForm(c *gin.Context) {
 	errorMessage, _ := c.Get("loginError")
 	c.HTML(http.StatusOK, "login.tmpl", gin.H{
 		"ErrorMessage": errorMessage,
 	})
+}
+
+func AuthRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		//セッション情報がある場合にはログインをしているとは判定
+		session := sessions.Default(c)
+		userId := session.Get("userId")
+		if userId == nil {
+			//未ログインの場合はログイン画面に飛ばす
+			loginForm(c)
+		}
+	}
 }
 
 func login(c *gin.Context) {
@@ -77,6 +79,7 @@ func isLoginUserExist(username, password string) (bool, User) {
 	if isTruePassword(password, passwordHash) {
 		//認証成功
 		fmt.Printf("isLoginUserExist認証成功")
+
 		return true, User{id, name, email}
 	}
 	fmt.Printf("isLoginUserExist認証失敗")
@@ -84,13 +87,12 @@ func isLoginUserExist(username, password string) (bool, User) {
 
 }
 
-//ログインチェック用
-func isLogin(c *gin.Context) {
-	//セッション作成
-	session := sessions.Default(c)
-	userId := session.Get("userId").(string)
-	if userId == "" {
-		//未ログインの場合はログイン画面に飛ばす
-		loginForm(c)
+func isTruePassword(password, passwordHash string) bool {
+	decodedPasswordHash, _ := hex.DecodeString(passwordHash)
+	err := bcrypt.CompareHashAndPassword(decodedPasswordHash, []byte(password))
+	if err == nil {
+		//認証に成功した場合にはerrが帰らないので認証成功としてtrueを返す
+		return true
 	}
+	return false
 }
