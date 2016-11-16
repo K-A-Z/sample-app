@@ -90,7 +90,7 @@ func main() {
 		authorized.GET("/todo/detail/:id", getTodo)
 		authorized.DELETE("/todo/detail/:id", deleteTodo)
 		authorized.PUT("/todo/detail/:id", updateTodo)
-		authorized.GET("/logout", logout)
+		authorized.POST("/logout", logout)
 
 		authorized.GET("/user", getUserList)
 		authorized.GET("/user/new", registerUser)
