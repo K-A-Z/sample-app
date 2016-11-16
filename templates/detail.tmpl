@@ -48,18 +48,18 @@
   <div class="demo-card-event mdl-card mdl-shadow--2dp">
     <div class="mdl-card__title">
       <h4>
-        {{.user.Name}}
+        {{.todo.Title}}
       </h4>
     </div>
     <div class="mdl-card__supporting-text">
-      {{.user.email}}
+      {{.todo.Description}}
     </div>
     <div class="mdl-card__actions mdl-card--border">
-      <button class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect" onclick="deleteUser()">
+      <button class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect" onclick="deleteTodo()">
         <i class="material-icons">delete</i>
       </button>
       <div class="mdl-layout-spacer"></div>
-      <button class="mdl-button mdl-js-button" onclick="location.href='/user'">
+      <button class="mdl-button mdl-js-button" onclick="location.href='/todo'">
         <i class="material-icons">format_list_bulleted</i>
       </button>
     </div>
@@ -68,12 +68,12 @@
   </body>
 
   <script>
-  function deleteUser(){
+  function deleteTodo(){
     var request = new XMLHttpRequest();
-    request.open('DELETE', '/todo/detail/{{.user.Id}}', true);
+    request.open('DELETE', '/todo/detail/{{.todo.Id}}', true);
     request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
     request.onload = function(){
-      window.location.href = '/user'
+      window.location.href = '/todo'
     }
     request.send();
   }
