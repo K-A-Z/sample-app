@@ -40,11 +40,11 @@
         <ul class="mdl-menu mdl-menu--bottom-left mdl-js-menu mdl-js-ripple-effect"
             for="demo-menu-lower-left">
             <a href="/todo">
-              <li disabled  class="mdl-menu__item"> Todo List</li>
+              <li class="mdl-menu__item"> Todo List</li>
             </a>
 
             <a href="/user">
-              <li class="mdl-menu__item"> User Management</li>
+              <li disabled class="mdl-menu__item"> User Management</li>
             </a>
 
         </ul>
@@ -55,27 +55,27 @@
           <table class="todo-list-table mdl-data-table mdl-js-data-table  mdl-shadow--2dp">
             <thead>
               <tr>
-                <td class="mdl-data-table__cell--non-numeric" colspan="3">TODO</td>
+                <td class="mdl-data-table__cell--non-numeric" colspan="3">USERS</td>
               </tr>
               <tr>
                 <th>Id</th>
-                <th class="mdl-data-table__cell--non-numeric">Title</th>
-                <th>User Name</th>
+                <th class="mdl-data-table__cell--non-numeric">Name</th>
+                <th class="mdl-data-table__cell--non-numeric">Email</th>
               </tr>
             </thead>
             <tbody>
-              {{range .todo}}
+              {{range .userList}}
               <tr>
                 <td>{{.Id}}</td>
                 <td class="mdl-data-table__cell--non-numeric">
-                  <a href="/todo/detail/{{.Id}}">{{.Title}}</a>
+                  <a href="/user/detail/{{.Id}}">{{.Name}}</a>
                 </td>
-              <td>{{.UserName}}</td>
+              <td>{{.Email}}</td>
               </tr>
               {{end}}
             </tbody>
           </table>
-          <button class="create-button mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--mini-fab mdl-button--colored" onclick="location.href='/todo/new'">
+          <button class="create-button mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--mini-fab mdl-button--colored" onclick="location.href='/user/new'">
             <i class="material-icons">add</i>
           </button>
         </div>

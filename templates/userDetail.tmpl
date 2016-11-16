@@ -1,0 +1,83 @@
+<html>
+  <head>
+    <title>Todo</title>
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://code.getmdl.io/1.2.1/material.indigo-pink.min.css">
+    <script defer src="https://code.getmdl.io/1.2.1/material.min.js"></script>
+
+
+    <style>
+    .demo-card-event.mdl-card {
+      width: 330px;
+      margin: 0 auto;
+    }
+    .demo-card-event > .mdl-card__actions {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .demo-card-event > .mdl-card__title {
+      align-items: flex-start;
+      background: #3E4EB8;
+    }
+    .demo-card-event > .mdl-card__title > h4 {
+      margin-top: 0;
+      color: #fff;
+    }
+    .demo-card-event > .mdl-card__supporting-text{
+
+    }
+    .demo-card-event > .mdl-card__actions {
+      display: flex;
+      box-sizing:border-box;
+      align-items: center;
+    }
+    .demo-card-event > .mdl-card__actions > .material-icons {
+      padding-right: 10px;
+    }
+    .demo-card-event > .mdl-card__title,
+    .demo-card-event > .mdl-card__actions,
+    .demo-card-event > .mdl-card__actions > .mdl-button {
+      color: #3E4EB8;
+    }
+    </style>
+  </head>
+  <body>
+
+
+
+  <div class="demo-card-event mdl-card mdl-shadow--2dp">
+    <div class="mdl-card__title">
+      <h4>
+        {{.user.Name}}
+      </h4>
+    </div>
+    <div class="mdl-card__supporting-text">
+      {{.user.Email}}
+    </div>
+    <div class="mdl-card__actions mdl-card--border">
+      <button class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect" onclick="deleteUser()">
+        DELETE
+      </button>
+      <div class="mdl-layout-spacer"></div>
+      <button class="mdl-button mdl-js-button" onclick="location.href='/user'">
+        <i class="material-icons">event</i>
+      </button>
+    </div>
+  </div>
+
+  </body>
+
+  <script>
+  function deleteUser(){
+    var request = new XMLHttpRequest();
+    request.open('DELETE', '/user/detail/{{.user.Id}}', true);
+    request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+    request.onload = function(){
+      window.location.href = '/user'
+    }
+    request.send();
+  }
+  </script>
+
+
+</html>

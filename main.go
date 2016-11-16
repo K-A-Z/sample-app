@@ -40,10 +40,11 @@ func dbInit() {
 		return
 	}
 	//管理ユーザを追加
-	var id string
-	db.QueryRow("SELECT id,name,email,password FROM users WHERE email=$1", "admin@example.com").Scan(&id)
-	if id == "" {
-		createUser(User{Name: "admin", Email: "admin@example.com"}, "password")
+	var count int
+	adminEmail := "admin@example.com"
+	db.QueryRow("SELECT count(*) as count FROM users WHERE email=$1", adminEmail).Scan(&count)
+	if count == 0 {
+		insertUser(User{Name: "admin", Email: "admin@example.com"}, "password")
 	}
 }
 
@@ -64,27 +65,6 @@ func isTruePassword(password, passwordHash string) bool {
 		return true
 	}
 	return false
-}
-
-func createUser(user User, password string) (User, error) {
-	//バリデーション
-	//パスワードのハッシュ化
-	hashPassword, err := toHash(password)
-	if err != nil {
-		return user, err
-	}
-	//データベースに登録
-	var id string
-	err = db.QueryRow("INSERT INTO users (name, email,password) VALUES ($1,$2,$3) returning id", user.Name, user.Email, hashPassword).Scan(&id)
-	if err != nil {
-		//登録に失敗したらエラーを返す
-		fmt.Printf("User is not created: %q", err)
-		return user, err
-	}
-	user.Id = id
-	//UserIdを詰めて戻す
-	fmt.Printf("Created user: %v", user)
-	return user, nil
 }
 
 func addTodo(title string, description string, userId string) (id int, err error) {
@@ -288,6 +268,13 @@ func main() {
 	router.DELETE("/todo/detail/:id", deleteTodo)
 	router.PUT("/todo/detail/:id", updateTodo)
 	router.GET("/logout", logout)
+
+	router.GET("/user", getUserList)
+	router.GET("/user/new", registerUser)
+	router.POST("/user", createUser)
+	router.GET("/user/detail/:id", getUser)
+	router.DELETE("/user/detail/:id", deleteUser)
+	router.PUT("/user/detail/:id", updateUser)
 
 	router.Run(":" + os.Getenv("PORT"))
 }
