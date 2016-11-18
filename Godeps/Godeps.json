@@ -19,6 +19,10 @@
 			"Rev": "80f7de34463b0ed3d7c61303e5619efe1b227f92"
 		},
 		{
+			"ImportPath": "github.com/gin-gonic/contrib/secure",
+			"Rev": "cf28f84316e50a05a59d174b37c26ad9a43a1201"
+		},
+		{
 			"ImportPath": "github.com/gin-gonic/contrib/sessions",
 			"Rev": "cf28f84316e50a05a59d174b37c26ad9a43a1201"
 		},
