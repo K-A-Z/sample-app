@@ -61,8 +61,9 @@ func main() {
 		parsedUrl, _ := url.Parse(redisUrl)
 		redisPassword, _ = parsedUrl.User.Password()
 		redisHost = parsedUrl.Host
+
 	}
-	store, _ := sessions.NewRedisStore(10, "tcp", redisHost, redisPassword, []byte("secret"))
+	store, err := sessions.NewRedisStore(10, "tcp", redisHost, redisPassword, []byte("secret"))
 	if err != nil {
 		log.Fatalf("Error redis is not connected: %q", err)
 	}
