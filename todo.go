@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/utrack/gin-csrf"
 )
 
 func getTodoList(c *gin.Context) {
@@ -47,7 +48,10 @@ func createTodo(c *gin.Context) {
 	title := c.PostForm("title")
 	description := c.PostForm("description")
 	session := sessions.Default(c)
-	userId := session.Get("userId").(string)
+	var userId string
+	if u := session.Get("userId"); u != nil {
+		userId = u.(string)
+	}
 
 	id, err := addTodo(title, description, userId)
 	if err != nil {
@@ -60,6 +64,7 @@ func createTodo(c *gin.Context) {
 }
 func registerTodo(c *gin.Context) {
 	c.HTML(http.StatusOK, "newtodo.tmpl", gin.H{
+		"csrf":  csrf.GetToken(c),
 		"title": "TODO:New",
 	})
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+	"github.com/utrack/gin-csrf"
 )
 
 type Todo struct {
@@ -101,6 +102,15 @@ func main() {
 
 	authorized := router.Group("/")
 	authorized.Use(AuthRequired())
+	//CSRF対策
+	authorized.Use(sessions.Sessions("mysession", store))
+	authorized.Use(csrf.Middleware(csrf.Options{
+		Secret: "MyTodoSecret",
+		ErrorFunc: func(c *gin.Context) {
+			c.String(400, "CSRF token mismatch")
+			c.Abort()
+		},
+	}))
 	{
 		authorized.GET("/todo", getTodoList)
 		authorized.GET("/todo/new", registerTodo)

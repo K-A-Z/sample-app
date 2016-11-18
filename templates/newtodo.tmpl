@@ -16,6 +16,7 @@
   </head>
   <body>
     <form action="/todo" method="post">
+      <input type="hidden" name="_csrf" value="{{.csrf}}" />
       <div class="mdl-layout mdl-js-layout mdl-color--grey-100">
       	<main class="loginbox mdl-layout__content">
       		<div class="mdl-card mdl-shadow--6dp">

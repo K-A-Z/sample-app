@@ -35,6 +35,7 @@ func AuthRequired() gin.HandlerFunc {
 			//未ログインの場合はログイン画面に飛ばす
 			loginForm(c)
 		}
+		c.Next()
 	}
 }
 

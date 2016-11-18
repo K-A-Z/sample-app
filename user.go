@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/utrack/gin-csrf"
 )
 
 func getUserList(c *gin.Context) {
@@ -33,7 +34,10 @@ func getUserList(c *gin.Context) {
 }
 
 func registerUser(c *gin.Context) {
-	c.HTML(http.StatusOK, "newUser.tmpl", gin.H{})
+	c.HTML(http.StatusOK, "newUser.tmpl", gin.H{
+		"csrf": csrf.GetToken(c),
+	})
+
 }
 
 func createUser(c *gin.Context) {

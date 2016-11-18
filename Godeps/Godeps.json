@@ -9,6 +9,10 @@
 			"Rev": "fc113767cd6b051980f260d6dbe84b2740c46ab0"
 		},
 		{
+			"ImportPath": "github.com/dchest/uniuri",
+			"Rev": "8902c56451e9b58ff940bbe5fec35d5f9c04584a"
+		},
+		{
 			"ImportPath": "github.com/garyburd/redigo/internal",
 			"Comment": "v1.0.0-6-g80f7de3",
 			"Rev": "80f7de34463b0ed3d7c61303e5619efe1b227f92"
@@ -70,6 +74,10 @@
 		{
 			"ImportPath": "github.com/manucorporat/sse",
 			"Rev": "ee05b128a739a0fb76c7ebd3ae4810c1de808d6d"
+		},
+		{
+			"ImportPath": "github.com/utrack/gin-csrf",
+			"Rev": "63c0ef5eca6cc70a0cd93a8b2ca8a9e2b860d155"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/bcrypt",
