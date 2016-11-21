@@ -16,14 +16,14 @@ import (
 )
 
 type Todo struct {
-	Id          string
+	Id          int
 	Title       string
 	Description string
 	UserName    string
 }
 
 type User struct {
-	Id    string
+	Id    int
 	Name  string
 	Email string
 }
@@ -103,30 +103,33 @@ func main() {
 
 	authorized := router.Group("/")
 	authorized.Use(AuthRequired())
-	//CSRF対策
-	authorized.Use(sessions.Sessions("mysession", store))
-	authorized.Use(csrf.Middleware(csrf.Options{
-		Secret: "MyTodoSecret",
-		ErrorFunc: func(c *gin.Context) {
-			c.String(400, "CSRF token mismatch")
-			c.Abort()
-		},
-	}))
-	{
-		authorized.GET("/todo", getTodoList)
-		authorized.GET("/todo/new", registerTodo)
-		authorized.POST("/todo", createTodo)
-		authorized.GET("/todo/detail/:id", getTodo)
-		authorized.DELETE("/todo/detail/:id", deleteTodo)
-		authorized.PUT("/todo/detail/:id", updateTodo)
-		authorized.POST("/logout", logout)
 
-		authorized.GET("/user", getUserList)
-		authorized.GET("/user/new", registerUser)
-		authorized.POST("/user", createUser)
-		authorized.GET("/user/detail/:id", getUser)
-		authorized.DELETE("/user/detail/:id", deleteUser)
-		authorized.PUT("/user/detail/:id", updateUser)
+	authorized.POST("/logout", logout)
+	{
+		//CSRF対策
+		secure := authorized.Group("/")
+		secure.Use(csrf.Middleware(csrf.Options{
+			Secret: "MyTodoSecret",
+			ErrorFunc: func(c *gin.Context) {
+				c.String(400, "CSRF token mismatch")
+				c.Abort()
+			},
+		}))
+		{
+			secure.GET("/todo", getTodoList)
+			secure.GET("/todo/new", registerTodo)
+			secure.POST("/todo", createTodo)
+			secure.GET("/todo/detail/:id", getTodo)
+			secure.DELETE("/todo/detail/:id", deleteTodo)
+			secure.PUT("/todo/detail/:id", updateTodo)
+
+			secure.GET("/user", getUserList)
+			secure.GET("/user/new", registerUser)
+			secure.POST("/user", createUser)
+			secure.GET("/user/detail/:id", getUser)
+			secure.DELETE("/user/detail/:id", deleteUser)
+			secure.PUT("/user/detail/:id", updateUser)
+		}
 	}
 
 	router.Run(":" + os.Getenv("PORT"))
