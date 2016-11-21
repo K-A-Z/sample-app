@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+	"github.com/newrelic/go-agent"
 	"github.com/utrack/gin-csrf"
 )
 
@@ -35,6 +36,14 @@ func dbInit() {
 		fmt.Printf("Error creating database table: %q", err)
 		return
 	}
+	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS todo (id serial, title varchar(100), description varchar(1000), userId integer)"); err != nil {
+		fmt.Printf("Error creating database table: %q", err)
+		return
+	}
+	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS todo (id serial, title varchar(100), description varchar(1000), userId integer)"); err != nil {
+		fmt.Printf("Error creating database table: %q", err)
+		return
+	}
 	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS users (id serial, name varchar(100),email varchar(1000), password varchar(1000))"); err != nil {
 		fmt.Printf("Error creating database table: %q", err)
 		return
@@ -45,6 +54,26 @@ func dbInit() {
 	db.QueryRow("SELECT count(*) as count FROM users WHERE email=$1", adminEmail).Scan(&count)
 	if count == 0 {
 		insertUser(User{Name: "admin", Email: "admin@example.com"}, "password")
+	}
+}
+
+func newRelicMiddleware() gin.HandlerFunc {
+	license := os.Getenv("NEW_RELIC_LICENSE_KEY")
+	config := newrelic.NewConfig("Fierce-ocean", license)
+	app, err := newrelic.NewApplication(config)
+	if err != nil {
+		fmt.Printf("New Relic Initialization Error")
+	}
+	if app == nil {
+		//relicが生成できない場合(開発環境等)の場合は空の関数を返す
+		return func(c *gin.Context) {
+			c.Next()
+		}
+	}
+	return func(c *gin.Context) {
+		txn := app.StartTransaction(c.Request.URL.String(), c.Writer, c.Request)
+		defer txn.End()
+		c.Next()
 	}
 }
 
@@ -90,6 +119,9 @@ func main() {
 		BrowserXssFilter:     true,
 		//ContentSecurityPolicy: "default-src 'self'",
 	}))
+
+	//NewRelic設定
+	router.Use(newRelicMiddleware())
 
 	router.LoadHTMLGlob("templates/*.tmpl")
 	router.Static("/assets", "./assets")
