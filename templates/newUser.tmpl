@@ -15,25 +15,27 @@
 
   </head>
   <body>
-    <form action="/todo" method="post">
+    <form action="/user" method="post">
       <input type="hidden" name="_csrf" value="{{.csrf}}" />
       <div class="mdl-layout mdl-js-layout mdl-color--grey-100">
       	<main class="loginbox mdl-layout__content">
       		<div class="mdl-card mdl-shadow--6dp">
       			<div class="mdl-card__title mdl-color--primary mdl-color-text--white">
-      				<h2 class="mdl-card__title-text">Create New Todo</h2>
+      				<h2 class="mdl-card__title-text">Create New User</h2>
       			</div>
       	  	<div class="mdl-card__supporting-text">
-      				<form action="#">
-      					<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-      						<input class="mdl-textfield__input" type="text" name="title" id="title" />
-      						<label class="mdl-textfield__label" for="title">Title</label>
-      					</div>
-      					<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-      						<input class="mdl-textfield__input" type="text" rows="3" name="description" id="description" />
-      						<label class="mdl-textfield__label" for="description">Description</label>
-      					</div>
-      				</form>
+    					<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+    						<input class="mdl-textfield__input" type="text" name="name" id="name" />
+    						<label class="mdl-textfield__label" for="name">Name</label>
+    					</div>
+    					<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+    						<input class="mdl-textfield__input" type="email" name="email" id="email" />
+    						<label class="mdl-textfield__label" for="email">Email</label>
+    					</div>
+              <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                <input class="mdl-textfield__input" type="password" name="password" id="password" />
+                <label class="mdl-textfield__label" for="password">password</label>
+              </div>
       			</div>
       			<div class="mdl-card__actions mdl-card--border">
       				<button class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">作成</button>

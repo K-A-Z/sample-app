@@ -5,117 +5,47 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
-	"strconv"
 
+	"github.com/gin-gonic/contrib/secure"
+	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+	"github.com/utrack/gin-csrf"
 )
 
 type Todo struct {
 	Id          int
 	Title       string
 	Description string
+	UserName    string
+}
+
+type User struct {
+	Id    int
+	Name  string
+	Email string
 }
 
 var db *sql.DB
 
 func dbInit() {
-	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS todo (id serial, title varchar(100), description varchar(1000))"); err != nil {
+	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS todo (id serial, title varchar(100), description varchar(1000), userId integer)"); err != nil {
 		fmt.Printf("Error creating database table: %q", err)
 		return
 	}
-}
-
-func addTodo(title string, description string) (id int, err error) {
-	err = db.QueryRow("INSERT INTO todo (title, description) VALUES ($1,$2) returning id", title, description).Scan(&id)
-	if err != nil {
-		fmt.Printf("Error incrementing tick: %q", err)
+	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS users (id serial, name varchar(100),email varchar(1000), password varchar(1000))"); err != nil {
+		fmt.Printf("Error creating database table: %q", err)
 		return
 	}
-	return
-}
-
-func getTodoList(c *gin.Context) {
-	rows, err := db.Query("SELECT id, title FROM todo")
-	if err != nil {
-		c.String(http.StatusInternalServerError,
-			fmt.Sprintf("Error reading ticks: %q", err))
-		return
+	//管理ユーザを追加
+	var count int
+	adminEmail := "admin@example.com"
+	db.QueryRow("SELECT count(*) as count FROM users WHERE email=$1", adminEmail).Scan(&count)
+	if count == 0 {
+		insertUser(User{Name: "admin", Email: "admin@example.com"}, "password")
 	}
-	defer rows.Close()
-
-	var todolist []Todo
-	for rows.Next() {
-		var id int
-		var title string
-		if err := rows.Scan(&id, &title); err != nil {
-			c.String(http.StatusInternalServerError, "Error :cant read task ::%q", err)
-			return
-		}
-		todolist = append(todolist, Todo{Id: id, Title: title})
-	}
-	fmt.Println(todolist)
-	c.HTML(http.StatusOK, "list.tmpl", gin.H{
-		"todo": todolist,
-	})
-}
-
-func getTodo(c *gin.Context) {
-	inputId := c.Param("id")
-	id, err := strconv.Atoi(inputId)
-	if err != nil {
-		c.String(http.StatusBadRequest, "Invalid todo number")
-	}
-
-	var title, description string
-	db.QueryRow("SELECT title, description FROM todo WHERE id=$1", id).Scan(&title, &description)
-	fmt.Printf("Id: %d   Title:%s   Description: %s\n", id, title, description)
-	c.HTML(http.StatusOK, "detail.tmpl", gin.H{
-		"todo": Todo{Id: id, Title: title, Description: description},
-	})
-}
-
-func createTodo(c *gin.Context) {
-	title := c.PostForm("title")
-	description := c.PostForm("description")
-
-	id, err := addTodo(title, description)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "Error: Todo is NOT created")
-	}
-	fmt.Printf("Insert todo:# %d ", id)
-	c.Redirect(http.StatusMovedPermanently, "/todo")
-
-}
-func registerTodo(c *gin.Context) {
-	c.HTML(http.StatusOK, "newtodo.tmpl", gin.H{
-		"title": "TODO:New",
-	})
-}
-
-func deleteTodo(c *gin.Context) {
-	id := c.Param("id")
-	_, err := db.Exec("DELETE FROM todo WHERE id=$1", id)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "Error: Todo is NOT deleted")
-	}
-}
-
-func updateTodo(c *gin.Context) {
-	id := c.Param("id")
-	title := c.Query("title")
-	description := c.Query("description")
-	var currentTitle, currentDescription string
-	db.QueryRow("SELECT title description FROM todo WHERE id=$1", id).Scan(&currentTitle, &currentDescription)
-	if title == "" {
-		title = currentTitle
-	}
-	if description == "" {
-		description = currentDescription
-	}
-	db.Exec("UPDATE todo SET title = $1, description = $2 WHERE id = $3 ", title, description, id)
-
 }
 
 func main() {
@@ -124,24 +54,83 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error opening database: %q", err)
 	}
+	//session処理用のRedisセットアップ
+	redisUrl := os.Getenv("REDIS_URL")
+	var redisHost, redisPassword string
+	if redisUrl != "" {
+		parsedUrl, _ := url.Parse(redisUrl)
+		redisPassword, _ = parsedUrl.User.Password()
+		redisHost = parsedUrl.Host
+
+	}
+	store, err := sessions.NewRedisStore(10, "tcp", redisHost, redisPassword, []byte("secret"))
+	if err != nil {
+		log.Fatalf("Error redis is not connected: %q", err)
+	}
+
+	//初期DBセットアップ
 	dbInit()
 
+	//ルーティング初期設定
 	router := gin.Default()
+
+	//セッション設定
+	router.Use(sessions.Sessions("session", store))
+
+	//セキュリティ設定
+	router.Use(secure.Secure(secure.Options{
+		//AllowedHosts:          []string{"example.com", "ssl.example.com"},
+		//SSLRedirect: true,
+		//SSLHost:               "ssl.example.com",
+		//SSLProxyHeaders:      map[string]string{"X-Forwarded-Proto": "https"},
+		STSSeconds:           315360000,
+		STSIncludeSubdomains: true,
+		FrameDeny:            true,
+		ContentTypeNosniff:   true,
+		BrowserXssFilter:     true,
+		//ContentSecurityPolicy: "default-src 'self'",
+	}))
+
 	router.LoadHTMLGlob("templates/*.tmpl")
 	router.Static("/assets", "./assets")
 
+	//ルーティング
 	router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"message": "Hello World",
-			"title":   "TopPage",
-		})
+		c.Redirect(http.StatusSeeOther, "/login")
 	})
-	router.GET("/todo", getTodoList)
-	router.GET("/todo/new", registerTodo)
-	router.POST("/todo", createTodo)
-	router.GET("/todo/detail/:id", getTodo)
-	router.DELETE("/todo/detail/:id", deleteTodo)
-	router.PUT("/todo/detail/:id", updateTodo)
+	router.GET("/login", loginForm)
+	router.POST("/login", login)
+
+	authorized := router.Group("/")
+	authorized.Use(AuthRequired())
+
+	authorized.POST("/logout", logout)
+	{
+		//CSRF対策
+		secure := authorized.Group("/")
+		secure.Use(csrf.Middleware(csrf.Options{
+			Secret: "MyTodoSecret",
+			ErrorFunc: func(c *gin.Context) {
+				c.String(400, "CSRF token mismatch")
+				c.Abort()
+			},
+		}))
+		{
+			secure.GET("/todo", getTodoList)
+			secure.GET("/todo/new", registerTodo)
+			secure.POST("/todo", createTodo)
+			secure.GET("/todo/detail/:id", getTodo)
+			secure.DELETE("/todo/detail/:id", deleteTodo)
+			secure.PUT("/todo/detail/:id", updateTodo)
+
+			secure.GET("/user", getUserList)
+			secure.GET("/user/new", registerUser)
+			secure.POST("/user", createUser)
+			secure.GET("/user/detail/:id", getUser)
+			secure.DELETE("/user/detail/:id", deleteUser)
+			secure.PUT("/user/detail/:id", updateUser)
+		}
+	}
 
 	router.Run(":" + os.Getenv("PORT"))
 }

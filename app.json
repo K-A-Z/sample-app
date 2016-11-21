@@ -7,8 +7,8 @@
   "formation": {
   },
   "addons": [
-    "heroku-postgresql"
-
+    "heroku-postgresql",
+    "heroku-redis"
   ],
   "buildpacks": [
   ]
