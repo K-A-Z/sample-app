@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -20,7 +21,8 @@ func getTodoList(c *gin.Context) {
 
 	var todolist []Todo
 	for rows.Next() {
-		var id, title, name string
+		var id int
+		var title, name string
 		if err := rows.Scan(&id, &title, &name); err != nil {
 			c.String(http.StatusInternalServerError, "Error :cant read task ::%q", err)
 			return
@@ -34,11 +36,15 @@ func getTodoList(c *gin.Context) {
 }
 
 func getTodo(c *gin.Context) {
-	id := c.Param("id")
+	idString := c.Param("id")
+	id, err := strconv.Atoi(idString)
+	if err != nil {
+		c.String(http.StatusInternalServerError, " Please contact the system administrator.")
+	}
 
 	var title, description string
 	db.QueryRow("SELECT title, description FROM todo WHERE id=$1 ", id).Scan(&title, &description)
-	fmt.Printf("Id: %s   Title:%s   Description: %s\n", id, title, description)
+	fmt.Printf("Id: %d   Title:%s   Description: %s\n", id, title, description)
 	c.HTML(http.StatusOK, "detail.tmpl", gin.H{
 		"todo": Todo{Id: id, Title: title, Description: description},
 	})
@@ -48,11 +54,11 @@ func createTodo(c *gin.Context) {
 	title := c.PostForm("title")
 	description := c.PostForm("description")
 	session := sessions.Default(c)
-	var userId string
+	var userId int
 	if u := session.Get("userId"); u != nil {
-		userId = u.(string)
+		userId = u.(int)
 	}
-
+	fmt.Printf("addTodo: title: %s, description: %s, userId: %d", title, description, userId)
 	id, err := addTodo(title, description, userId)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Error: Todo is NOT created")
@@ -93,7 +99,8 @@ func updateTodo(c *gin.Context) {
 
 }
 
-func addTodo(title string, description string, userId string) (id int, err error) {
+func addTodo(title string, description string, userId int) (id int, err error) {
+	fmt.Printf("addTodo: title: %s, description: %s, userId: %d", title, description, userId)
 	err = db.QueryRow("INSERT INTO todo (title, description,userId) VALUES ($1,$2,$3) returning id", title, description, userId).Scan(&id)
 	if err != nil {
 		fmt.Printf("Error incrementing tick: %q", err)

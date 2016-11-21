@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/utrack/gin-csrf"
@@ -20,7 +21,8 @@ func getUserList(c *gin.Context) {
 
 	var userList []User
 	for rows.Next() {
-		var id, name, email string
+		var id int
+		var name, email string
 		if err := rows.Scan(&id, &name, &email); err != nil {
 			c.String(http.StatusInternalServerError, "Error :cant read task ::%q", err)
 			return
@@ -64,7 +66,7 @@ func insertUser(user User, password string) (User, error) {
 		return user, err
 	}
 	//データベースに登録
-	var id string
+	var id int
 	err = db.QueryRow("INSERT INTO users (name, email,password) VALUES ($1,$2,$3) returning id", user.Name, user.Email, hashPassword).Scan(&id)
 	if err != nil {
 		//登録に失敗したらエラーを返す
@@ -78,11 +80,15 @@ func insertUser(user User, password string) (User, error) {
 }
 
 func getUser(c *gin.Context) {
-	id := c.Param("id")
+	idString := c.Param("id")
+	id, err := strconv.Atoi(idString)
+	if err != nil {
+		c.String(http.StatusInternalServerError, " Please contact the system administrator.")
+	}
 
 	var name, email string
 	db.QueryRow("SELECT name, email FROM users WHERE id=$1 ", id).Scan(&name, &email)
-	fmt.Printf("Id: %s Name: %s   Email:%s   \n", id, name, email)
+	fmt.Printf("Id: %d Name: %s   Email:%s   \n", id, name, email)
 	c.HTML(http.StatusOK, "userDetail.tmpl", gin.H{
 		"user": User{Id: id, Name: name, Email: email},
 	})

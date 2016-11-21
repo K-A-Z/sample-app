@@ -35,7 +35,8 @@ func AuthRequired() gin.HandlerFunc {
 			//未ログインの場合はログイン画面に飛ばす
 			loginForm(c)
 		}
-		c.Next()
+		fmt.Printf("Authorized User Session:: userid:%d username: %s ", session.Get("userId"), session.Get("name"))
+		//c.Next()
 	}
 }
 
@@ -74,7 +75,8 @@ func logout(c *gin.Context) {
 }
 
 func isLoginUserExist(username, password string) (bool, User) {
-	var id, name, email, passwordHash string
+	var id int
+	var name, email, passwordHash string
 	db.QueryRow("SELECT id,name,email,password FROM users WHERE email=$1", username).Scan(&id, &name, &email, &passwordHash)
 	//DBのパスワードと入力されたパスワードをチェック
 	if isTruePassword(password, passwordHash) {
