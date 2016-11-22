@@ -70,7 +70,7 @@
   <script>
   function deleteUser(){
     var request = new XMLHttpRequest();
-    request.open('DELETE', '/user/detail/{{.user.Id}}', true);
+    request.open('DELETE', '/user/detail/{{.user.Id}}?_csrf={{.csrf}}', true);
     request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
     request.onload = function(){
       window.location.href = '/user'
