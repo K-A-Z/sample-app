@@ -47,6 +47,7 @@ func getTodo(c *gin.Context) {
 	fmt.Printf("Id: %d   Title:%s   Description: %s\n", id, title, description)
 	c.HTML(http.StatusOK, "detail.tmpl", gin.H{
 		"todo": Todo{Id: id, Title: title, Description: description},
+		"csrf": csrf.GetToken(c),
 	})
 }
 
@@ -76,8 +77,16 @@ func registerTodo(c *gin.Context) {
 }
 
 func deleteTodo(c *gin.Context) {
-	id := c.Param("id")
-	_, err := db.Exec("DELETE FROM todo WHERE id=$1", id)
+	paramId := c.Param("id")
+	fmt.Printf("URL csrf token: %s", c.Query("_csrf"))
+	if paramId == "" {
+		c.String(http.StatusBadRequest, "Invalid Task id:%s", paramId)
+	}
+	id, err := strconv.Atoi(paramId)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Invalid Task id:%s", paramId)
+	}
+	_, err = db.Exec("DELETE FROM todo WHERE id=$1", id)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Error: Todo is NOT deleted")
 	}

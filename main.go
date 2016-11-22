@@ -141,7 +141,8 @@ func main() {
 		//CSRF対策
 		secure := authorized.Group("/")
 		secure.Use(csrf.Middleware(csrf.Options{
-			Secret: "MyTodoSecret",
+			Secret:        "MyTodoSecret",
+			IgnoreMethods: []string{"GET", "HEAD", "OPTIONS"},
 			ErrorFunc: func(c *gin.Context) {
 				c.String(400, "CSRF token mismatch")
 				c.Abort()

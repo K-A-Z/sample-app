@@ -90,6 +90,7 @@ func getUser(c *gin.Context) {
 	db.QueryRow("SELECT name, email FROM users WHERE id=$1 ", id).Scan(&name, &email)
 	fmt.Printf("Id: %d Name: %s   Email:%s   \n", id, name, email)
 	c.HTML(http.StatusOK, "userDetail.tmpl", gin.H{
+		"csrf": csrf.GetToken(c),
 		"user": User{Id: id, Name: name, Email: email},
 	})
 }

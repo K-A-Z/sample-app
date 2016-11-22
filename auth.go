@@ -36,7 +36,7 @@ func AuthRequired() gin.HandlerFunc {
 			loginForm(c)
 		}
 		fmt.Printf("Authorized User Session:: userid:%d username: %s ", session.Get("userId"), session.Get("name"))
-		//c.Next()
+		c.Next()
 	}
 }
 

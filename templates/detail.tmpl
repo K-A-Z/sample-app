@@ -70,13 +70,14 @@
   <script>
   function deleteTodo(){
     var request = new XMLHttpRequest();
-    request.open('DELETE', '/todo/detail/{{.todo.Id}}', true);
+    request.open('DELETE', '/todo/detail/{{.todo.Id}}?_csrf={{.csrf}}', true);
     request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
     request.onload = function(){
       window.location.href = '/todo'
     }
     request.send();
   }
+
   </script>
 
 
