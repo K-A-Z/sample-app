@@ -60,7 +60,7 @@ func login(c *gin.Context) {
 
 	session.Set("name", user.Name)
 	session.Set("email", user.Email)
-	session.Set("userId", user.Id)
+	session.Set("userId", user.ID)
 	session.Save()
 
 	getTodoList(c)
@@ -75,15 +75,14 @@ func logout(c *gin.Context) {
 }
 
 func isLoginUserExist(username, password string) (bool, User) {
-	var id int
-	var name, email, passwordHash string
-	db.QueryRow("SELECT id,name,email,password FROM users WHERE email=$1", username).Scan(&id, &name, &email, &passwordHash)
+	var user User
+	db.Where("email = ?", username).First(&user)
 	//DBのパスワードと入力されたパスワードをチェック
-	if isTruePassword(password, passwordHash) {
+	if isTruePassword(password, user.Password) {
 		//認証成功
 		fmt.Printf("isLoginUserExist認証成功")
 
-		return true, User{id, name, email}
+		return true, user
 	}
 	fmt.Printf("isLoginUserExist認証失敗")
 	return false, User{}

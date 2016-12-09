@@ -7,11 +7,12 @@ import (
 
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 	"github.com/utrack/gin-csrf"
 )
 
 func getTodoList(c *gin.Context) {
-	rows, err := db.Query("SELECT todo.id, title ,users.name FROM todo ,users WHERE todo.userId=users.id")
+	rows, err := db.Table("todos").Select("todos.id,todos.title,users.name").Joins("join users on todos.user_id = users.id").Rows()
 	if err != nil {
 		c.String(http.StatusInternalServerError,
 			fmt.Sprintf("Error reading ticks: %q", err))
@@ -21,13 +22,13 @@ func getTodoList(c *gin.Context) {
 
 	var todolist []Todo
 	for rows.Next() {
-		var id int
+		var id uint
 		var title, name string
 		if err := rows.Scan(&id, &title, &name); err != nil {
 			c.String(http.StatusInternalServerError, "Error :cant read task ::%q", err)
 			return
 		}
-		todolist = append(todolist, Todo{Id: id, Title: title, UserName: name})
+		todolist = append(todolist, Todo{Model: gorm.Model{ID: id}, Title: title, User: User{Name: name}})
 	}
 	fmt.Println(todolist)
 	c.HTML(http.StatusOK, "list.tmpl", gin.H{
@@ -42,11 +43,11 @@ func getTodo(c *gin.Context) {
 		c.String(http.StatusInternalServerError, " Please contact the system administrator.")
 	}
 
-	var title, description string
-	db.QueryRow("SELECT title, description FROM todo WHERE id=$1 ", id).Scan(&title, &description)
-	fmt.Printf("Id: %d   Title:%s   Description: %s\n", id, title, description)
+	var todo Todo
+	db.First(&todo, id)
+	fmt.Printf("Id: %d   Title:%s   Description: %s\n", todo.ID, todo.Title, todo.Description)
 	c.HTML(http.StatusOK, "detail.tmpl", gin.H{
-		"todo": Todo{Id: id, Title: title, Description: description},
+		"todo": todo,
 		"csrf": csrf.GetToken(c),
 	})
 }
@@ -55,9 +56,10 @@ func createTodo(c *gin.Context) {
 	title := c.PostForm("title")
 	description := c.PostForm("description")
 	session := sessions.Default(c)
-	var userId int
+	var userId uint
+	fmt.Printf("userid of session: %v", session.Get("userId"))
 	if u := session.Get("userId"); u != nil {
-		userId = u.(int)
+		userId = u.(uint)
 	}
 	fmt.Printf("addTodo: title: %s, description: %s, userId: %d", title, description, userId)
 	id, err := addTodo(title, description, userId)
@@ -86,31 +88,32 @@ func deleteTodo(c *gin.Context) {
 	if err != nil {
 		c.String(http.StatusBadRequest, "Invalid Task id:%s", paramId)
 	}
-	_, err = db.Exec("DELETE FROM todo WHERE id=$1", id)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "Error: Todo is NOT deleted")
-	}
+
+	db.Delete(&Todo{}, id)
 }
 
 func updateTodo(c *gin.Context) {
 	id := c.Param("id")
 	title := c.Query("title")
 	description := c.Query("description")
-	var currentTitle, currentDescription string
-	db.QueryRow("SELECT title description FROM todo WHERE id=$1", id).Scan(&currentTitle, &currentDescription)
-	if title == "" {
-		title = currentTitle
+	//var currentTitle, currentDescription string
+	var todo Todo
+	db.First(&todo, id)
+	if title != "" {
+		todo.Title = title
 	}
-	if description == "" {
-		description = currentDescription
+	if description != "" {
+		todo.Description = description
 	}
-	db.Exec("UPDATE todo SET title = $1, description = $2 WHERE id = $3 ", title, description, id)
+	db.Save(&todo)
 
 }
 
-func addTodo(title string, description string, userId int) (id int, err error) {
+func addTodo(title string, description string, userId uint) (id int, err error) {
 	fmt.Printf("addTodo: title: %s, description: %s, userId: %d", title, description, userId)
-	err = db.QueryRow("INSERT INTO todo (title, description,userId) VALUES ($1,$2,$3) returning id", title, description, userId).Scan(&id)
+	todo := Todo{Title: title, Description: description, UserId: userId}
+	db.NewRecord(todo)
+	db.Create(&todo)
 	if err != nil {
 		fmt.Printf("Error incrementing tick: %q", err)
 		return

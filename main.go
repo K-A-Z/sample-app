@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,50 +10,44 @@ import (
 	"github.com/gin-gonic/contrib/secure"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
-	_ "github.com/lib/pq"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/newrelic/go-agent"
 	"github.com/utrack/gin-csrf"
 )
 
+var db *gorm.DB
+
 type Todo struct {
-	Id          int
-	Title       string
-	Description string
-	UserName    string
+	gorm.Model
+	Title       string `gorm:"size:255"`
+	Description string `gorm:"size:4095"`
+	User        User
+	UserId      uint
 }
 
 type User struct {
-	Id    int
-	Name  string
-	Email string
+	gorm.Model
+	Name     string `gorm:"size:255"`
+	Email    string `gorm:"size:255"`
+	Password string
 }
 
-var db *sql.DB
-
 func dbInit() {
-	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS todo (id serial, title varchar(100), description varchar(1000), userId integer)"); err != nil {
-		fmt.Printf("Error creating database table: %q", err)
-		return
-	}
-	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS todo (id serial, title varchar(100), description varchar(1000), userId integer)"); err != nil {
-		fmt.Printf("Error creating database table: %q", err)
-		return
-	}
-	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS todo (id serial, title varchar(100), description varchar(1000), userId integer)"); err != nil {
-		fmt.Printf("Error creating database table: %q", err)
-		return
-	}
-	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS users (id serial, name varchar(100),email varchar(1000), password varchar(1000))"); err != nil {
-		fmt.Printf("Error creating database table: %q", err)
-		return
-	}
+	var todo Todo
+	var user User
+	//db.Model(&todo).Related(&user)
+	db.DropTableIfExists(&todo)
+	db.DropTableIfExists(&user)
+	db.CreateTable(&todo)
+	db.CreateTable(&user)
+
 	//管理ユーザを追加
-	var count int
-	adminEmail := "admin@example.com"
-	db.QueryRow("SELECT count(*) as count FROM users WHERE email=$1", adminEmail).Scan(&count)
-	if count == 0 {
-		insertUser(User{Name: "admin", Email: "admin@example.com"}, "password")
-	}
+	pass, _ := toHash("password")
+	adminUser := User{Name: "admin", Email: "admin@example.com", Password: pass}
+	db.NewRecord(adminUser)
+	db.Create(&adminUser)
+	db.Save(&adminUser)
 }
 
 func newRelicMiddleware() gin.HandlerFunc {
@@ -79,10 +72,12 @@ func newRelicMiddleware() gin.HandlerFunc {
 
 func main() {
 	var err error
-	db, err = sql.Open("postgres", os.Getenv("DATABASE_URL"))
+
+	db, err = gorm.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatalf("Error opening database: %q", err)
 	}
+	defer db.Close()
 	//session処理用のRedisセットアップ
 	redisUrl := os.Getenv("REDIS_URL")
 	var redisHost, redisPassword string

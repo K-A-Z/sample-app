@@ -71,11 +71,11 @@
             <tbody>
               {{range .todo}}
               <tr>
-                <td>{{.Id}}</td>
+                <td>{{.ID}}</td>
                 <td class="mdl-data-table__cell--non-numeric">
-                  <a href="/todo/detail/{{.Id}}">{{.Title}}</a>
+                  <a href="/todo/detail/{{.ID}}">{{.Title}}</a>
                 </td>
-              <td>{{.UserName}}</td>
+              <td>{{.User.Name}}</td>
               </tr>
               {{end}}
             </tbody>

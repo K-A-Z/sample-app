@@ -11,27 +11,12 @@ import (
 
 func getUserList(c *gin.Context) {
 
-	rows, err := db.Query("SELECT id,name, email FROM users")
-	if err != nil {
-		c.String(http.StatusInternalServerError,
-			fmt.Sprintf("Error reading ticks: %q", err))
-		return
-	}
-	defer rows.Close()
-
-	var userList []User
-	for rows.Next() {
-		var id int
-		var name, email string
-		if err := rows.Scan(&id, &name, &email); err != nil {
-			c.String(http.StatusInternalServerError, "Error :cant read task ::%q", err)
-			return
-		}
-		userList = append(userList, User{Id: id, Name: name, Email: email})
-	}
-	fmt.Println(userList)
+	//rows, err := db.Query("SELECT id,name, email FROM users")
+	var users []User
+	db.Find(&users)
+	fmt.Println(users)
 	c.HTML(http.StatusOK, "userList.tmpl", gin.H{
-		"userList": userList,
+		"userList": users,
 	})
 }
 
@@ -61,20 +46,18 @@ func createUser(c *gin.Context) {
 func insertUser(user User, password string) (User, error) {
 	//バリデーション
 	//パスワードのハッシュ化
-	hashPassword, err := toHash(password)
-	if err != nil {
-		return user, err
-	}
+	user.Password, _ = toHash(password)
+
 	//データベースに登録
-	var id int
-	err = db.QueryRow("INSERT INTO users (name, email,password) VALUES ($1,$2,$3) returning id", user.Name, user.Email, hashPassword).Scan(&id)
-	if err != nil {
-		//登録に失敗したらエラーを返す
-		fmt.Printf("User is not created: %q", err)
-		return user, err
+	db.NewRecord(user)
+	errs := db.Create(&user).GetErrors()
+	for _, err := range errs {
+		if err != nil {
+			//登録に失敗したらエラーを返す
+			fmt.Printf("User is not created: %q", err)
+			return user, err
+		}
 	}
-	user.Id = id
-	//UserIdを詰めて戻す
 	fmt.Printf("Created user: %v", user)
 	return user, nil
 }
@@ -86,20 +69,22 @@ func getUser(c *gin.Context) {
 		c.String(http.StatusInternalServerError, " Please contact the system administrator.")
 	}
 
-	var name, email string
-	db.QueryRow("SELECT name, email FROM users WHERE id=$1 ", id).Scan(&name, &email)
-	fmt.Printf("Id: %d Name: %s   Email:%s   \n", id, name, email)
+	var user User
+	db.First(&user, id)
+	fmt.Printf("Id: %d Name: %s   Email:%s   \n", user.ID, user.Name, user.Email)
 	c.HTML(http.StatusOK, "userDetail.tmpl", gin.H{
 		"csrf": csrf.GetToken(c),
-		"user": User{Id: id, Name: name, Email: email},
+		"user": user,
 	})
 }
 
 func deleteUser(c *gin.Context) {
 	id := c.Param("id")
-	_, err := db.Exec("DELETE FROM users WHERE id=$1", id)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "Error: User is NOT deleted")
+	errs := db.Delete(&User{}, id).GetErrors()
+	for _, err := range errs {
+		if err != nil {
+			c.String(http.StatusInternalServerError, "Error: User is NOT deleted")
+		}
 	}
 }
 
@@ -107,13 +92,13 @@ func updateUser(c *gin.Context) {
 	id := c.Param("id")
 	name := c.Query("name")
 	email := c.Query("email")
-	var currentName, currentEmail string
-	db.QueryRow("SELECT name,email FROM users WHERE id=$1", id).Scan(&currentName, &currentEmail)
-	if name == "" {
-		name = currentName
+	var user User
+	db.First(&user, id)
+	if name != "" {
+		user.Name = name
 	}
-	if email == "" {
-		email = currentEmail
+	if email != "" {
+		user.Email = email
 	}
-	db.Exec("UPDATE users SET name = $1, email = $2 WHERE id = $3 ", name, email, id)
+	db.Update(user)
 }
